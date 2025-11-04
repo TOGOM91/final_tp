@@ -15,7 +15,7 @@ export default function Dashboard() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          setError("Aucun token trouvé. Veuillez vous reconnecter.");
+          setError("Aucun token trouvé. Veuillez vous reconnecterr.");
           setLoading(false);
           return;
         }
