@@ -1,4 +1,4 @@
-name: Deploy Frontend to VPS and Backend to Render
+name: Deploy Frontend and Backend
 
 on:
   push:
@@ -19,24 +19,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          # Cache supprimé pour éviter les erreurs si package-lock.json est absent
           cache: 'npm'
-          cache-dependency-path: |
-            frontend/package-lock.json
-            backend/package-lock.json
 
-      # 3️⃣ Build frontend
+      # 3️⃣ Build frontend (admin-dashboard)
       - name: Install frontend dependencies
         run: |
-          cd frontend
+          cd admin-dashboard
           npm ci --audit=false
       - name: Build frontend
         run: |
-          cd frontend
+          cd admin-dashboard
           npm run build
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
-      # 4️⃣ Deploy backend to Render
+      # 4️⃣ Deploy backend to Render (backend-API)
       - name: Deploy backend to Render
         run: |
           echo "🚀 Déploiement backend Render..."
@@ -61,7 +59,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
             "mkdir -p ${{ secrets.VPS_DEPLOY_PATH }}/current"
           rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
-            frontend/build/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/current/
+            admin-dashboard/build/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/current/
           echo "✅ Synchronisation terminée"
 
       # 7️⃣ Redémarrer PM2
