@@ -66,14 +66,14 @@ jobs:
         run: |
           echo "📁 Création du répertoire de déploiement..."
           ssh -i ~/.ssh/id_ed25519 deploy@213.156.132.221 \
-            "mkdir -p ${{ secrets.VPS_DEPLOY_PATH }}/current"
+            "mkdir -p \$HOME/frontend/current && echo '✅ Répertoire créé: \$HOME/frontend/current'"
 
       - name: Sync frontend build to VPS
         run: |
           echo "📡 Synchronisation du build frontend vers VPS..."
           rsync -avz --delete -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
             admin-dashboard/build/ \
-            deploy@213.156.132.221:${{ secrets.VPS_DEPLOY_PATH }}/current/
+            deploy@213.156.132.221:~/frontend/current/
           echo "✅ Synchronisation terminée"
 
       # 8️⃣ Redémarrer PM2
@@ -81,7 +81,7 @@ jobs:
         run: |
           echo "🔄 Gestion PM2..."
           ssh -i ~/.ssh/id_ed25519 deploy@213.156.132.221 << 'ENDSSH'
-            cd ${{ secrets.VPS_DEPLOY_PATH }}/current
+            cd ~/frontend/current
             if pm2 describe frontend > /dev/null 2>&1; then
               echo "♻️ Redémarrage de l'application existante..."
               pm2 restart frontend
@@ -104,3 +104,16 @@ jobs:
           echo "🔙 Backend: ${{ secrets.RENDER_BACKEND_URL }}"
           echo "⏰ Date: $(date)"
           echo "================================"
+```
+
+## Changements importants :
+
+1. **Utilise `~/frontend/current`** au lieu de `${{ secrets.VPS_DEPLOY_PATH }}/current`
+2. **Échappe les variables** : `\$HOME` au lieu de `$HOME` dans les commandes SSH
+3. **Plus besoin du secret VPS_DEPLOY_PATH** (mais gardez-le si vous voulez le réutiliser ailleurs)
+
+## Alternative si vous voulez garder le secret :
+
+Mettez à jour `VPS_DEPLOY_PATH` avec :
+```
+/home/deploy/frontend
