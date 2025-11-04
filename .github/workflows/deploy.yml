@@ -7,77 +7,75 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    
+    timeout-minutes: 20
+
     steps:
-    # Étape 1: Récupération du code
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    # Étape 2: Setup Node.js
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: |
-          frontend/package-lock.json
-          backend/package-lock.json
+      # 1️⃣ Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # Étape 3: Build du Frontend
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm ci --audit=false
-        
-    - name: Build frontend
-      run: |
-        cd frontend
-        npm run build
-      env:
-        REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
 
-    # Étape 4: Déploiement Backend sur Render
-    - name: Deploy Backend to Render
-      run: |
-        echo "🚀 Déploiement du backend sur Render..."
-        curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
-        echo "✅ Déclenchement du déploiement Render effectué"
+      # 3️⃣ Build frontend
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci --audit=false
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+        env:
+          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
-    # Étape 5: Déploiement Frontend sur VPS
-    - name: Setup SSH for VPS
-      uses: webfactory/ssh-agent@v0.8.0
-      with:
-        ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      # 4️⃣ Deploy backend to Render
+      - name: Deploy backend to Render
+        run: |
+          echo "🚀 Déploiement backend Render..."
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          echo "✅ Backend déclenché"
 
-    - name: Add VPS to known hosts
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.VPS_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+      # 5️⃣ Setup SSH pour VPS
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
 
-    - name: Sync Frontend build to VPS
-      run: |
-        echo "📡 Synchronisation du build frontend vers le VPS..."
-        rsync -avz --delete \
-          -e "ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30" \
-          frontend/build/ \
-          ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/current/
-        echo "✅ Synchronisation frontend terminée"
+      - name: Add VPS to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
 
-    - name: Restart Frontend with PM2
-      run: |
-        echo "🔄 Redémarrage de l'application avec PM2..."
-        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
-          ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-          "cd ${{ secrets.VPS_DEPLOY_PATH }} && pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js"
-        echo "✅ Redémarrage PM2 effectué"
+      # 6️⃣ Déployer frontend sur VPS
+      - name: Sync frontend build to VPS
+        run: |
+          echo "📡 Synchronisation du build frontend vers VPS..."
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "mkdir -p ${{ secrets.VPS_DEPLOY_PATH }}/current"
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
+            frontend/build/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/current/
+          echo "✅ Synchronisation terminée"
 
-    # Étape 6: Vérification finale
-    - name: Verify deployment
-      run: |
-        echo "🎉 DÉPLOIEMENT TERMINÉ AVEC SUCCÈS"
-        echo "========================================"
-        echo "🌐 Frontend URL: http://${{ secrets.VPS_HOST }}"
-        echo "🔙 Backend URL: ${{ secrets.RENDER_BACKEND_URL }}"
-        echo "⏰ Déploiement terminé à: $(date)"
-        echo "========================================"
+      # 7️⃣ Redémarrer PM2
+      - name: Restart frontend with PM2
+        run: |
+          echo "🔄 Redémarrage PM2..."
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "pm2 serve ${{ secrets.VPS_DEPLOY_PATH }}/current 3000 --name frontend --spa || pm2 restart frontend"
+          echo "✅ PM2 redémarré"
+
+      # 8️⃣ Vérification finale
+      - name: Verify deployment
+        run: |
+          echo "🎉 Déploiement terminé !"
+          echo "🌐 Frontend URL: http://${{ secrets.VPS_HOST }}:3000"
+          echo "🔙 Backend URL: ${{ secrets.RENDER_BACKEND_URL }}"
+          echo "⏰ Déploiement à: $(date)"
