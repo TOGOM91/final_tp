@@ -24,14 +24,32 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd admin-dashboard
+          echo "📦 Installation des dépendances..."
           npm install --legacy-peer-deps
+          echo "✅ Dépendances installées"
         
       - name: Build frontend
         run: |
           cd admin-dashboard
+          echo "🔨 Compilation du frontend..."
           npm run build
+          echo "✅ Build terminé"
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+
+      # 3.5️⃣ Vérifier que le build existe
+      - name: Verify build directory
+        run: |
+          echo "🔍 Vérification du répertoire build..."
+          if [ -d "admin-dashboard/build" ]; then
+            echo "✅ Le répertoire build existe"
+            ls -lah admin-dashboard/build
+          else
+            echo "❌ ERREUR: Le répertoire build n'existe pas !"
+            echo "Contenu de admin-dashboard:"
+            ls -lah admin-dashboard/
+            exit 1
+          fi
 
       # 4️⃣ Deploy backend to Render (backend-API)
       - name: Deploy backend to Render
@@ -104,4 +122,3 @@ jobs:
           echo "🔙 Backend: ${{ secrets.RENDER_BACKEND_URL }}"
           echo "⏰ Date: $(date)"
           echo "================================"
-
