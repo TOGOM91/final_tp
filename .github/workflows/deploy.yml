@@ -41,53 +41,46 @@ jobs:
           echo "✅ Backend déclenché"
 
       # 5️⃣ Setup SSH pour VPS
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-
-      - name: Configure SSH
+      - name: Configure SSH key
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
-          chmod 644 ~/.ssh/known_hosts
           
-          # Configuration SSH
-          cat >> ~/.ssh/config <<EOF
-          Host vps
-            HostName ${{ secrets.VPS_HOST }}
-            User ${{ secrets.VPS_USER }}
-            StrictHostKeyChecking no
-            UserKnownHostsFile ~/.ssh/known_hosts
-          EOF
-          chmod 600 ~/.ssh/config
+          # Écrire la clé privée
+          echo "${{ secrets.VPS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          # Ajouter l'hôte aux known_hosts
+          echo "213.156.132.221 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIRhoBohBCg07QbdkNV8UAlJ9RkHW5QG2ZeQ3eO45TK6" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       # 6️⃣ Test de connexion SSH
       - name: Test SSH connection
         run: |
           echo "🔍 Test de connexion SSH..."
-          ssh vps "echo '✅ Connexion SSH réussie'"
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            deploy@213.156.132.221 "echo '✅ Connexion réussie' && whoami && pwd"
 
       # 7️⃣ Déployer frontend sur VPS
       - name: Create deployment directory on VPS
         run: |
           echo "📁 Création du répertoire de déploiement..."
-          ssh vps "mkdir -p ${{ secrets.VPS_DEPLOY_PATH }}/current"
+          ssh -i ~/.ssh/id_ed25519 deploy@213.156.132.221 \
+            "mkdir -p ${{ secrets.VPS_DEPLOY_PATH }}/current"
 
       - name: Sync frontend build to VPS
         run: |
           echo "📡 Synchronisation du build frontend vers VPS..."
-          rsync -avz --delete -e "ssh" \
+          rsync -avz --delete -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
             admin-dashboard/build/ \
-            vps:${{ secrets.VPS_DEPLOY_PATH }}/current/
+            deploy@213.156.132.221:${{ secrets.VPS_DEPLOY_PATH }}/current/
           echo "✅ Synchronisation terminée"
 
       # 8️⃣ Redémarrer PM2
       - name: Restart frontend with PM2
         run: |
           echo "🔄 Gestion PM2..."
-          ssh vps << 'ENDSSH'
+          ssh -i ~/.ssh/id_ed25519 deploy@213.156.132.221 << 'ENDSSH'
             cd ${{ secrets.VPS_DEPLOY_PATH }}/current
             if pm2 describe frontend > /dev/null 2>&1; then
               echo "♻️ Redémarrage de l'application existante..."
@@ -107,7 +100,7 @@ jobs:
           echo "================================"
           echo "🎉 Déploiement terminé avec succès !"
           echo "================================"
-          echo "🌐 Frontend: http://${{ secrets.VPS_HOST }}:3000"
+          echo "🌐 Frontend: http://213.156.132.221:3000"
           echo "🔙 Backend: ${{ secrets.RENDER_BACKEND_URL }}"
           echo "⏰ Date: $(date)"
           echo "================================"
