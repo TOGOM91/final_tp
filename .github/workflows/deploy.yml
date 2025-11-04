@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
+    
     steps:
       # 1️⃣ Checkout code
       - name: Checkout repository
@@ -19,14 +19,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          # Cache supprimé pour éviter les erreurs si package-lock.json est absent
-          cache: 'npm'
+          # Pas de cache si package-lock.json n'existe pas
 
       # 3️⃣ Build frontend (admin-dashboard)
       - name: Install frontend dependencies
         run: |
           cd admin-dashboard
-          npm ci --audit=false
+          npm install --legacy-peer-deps
+        
       - name: Build frontend
         run: |
           cd admin-dashboard
@@ -50,24 +50,39 @@ jobs:
       - name: Add VPS to known_hosts
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       # 6️⃣ Déployer frontend sur VPS
+      - name: Create deployment directory on VPS
+        run: |
+          echo "📁 Création du répertoire de déploiement..."
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "mkdir -p ${{ secrets.VPS_DEPLOY_PATH }}/current"
+
       - name: Sync frontend build to VPS
         run: |
           echo "📡 Synchronisation du build frontend vers VPS..."
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "mkdir -p ${{ secrets.VPS_DEPLOY_PATH }}/current"
           rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
-            admin-dashboard/build/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/current/
+            admin-dashboard/build/ \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/current/
           echo "✅ Synchronisation terminée"
 
       # 7️⃣ Redémarrer PM2
       - name: Restart frontend with PM2
         run: |
           echo "🔄 Redémarrage PM2..."
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "pm2 serve ${{ secrets.VPS_DEPLOY_PATH }}/current 3000 --name frontend --spa || pm2 restart frontend"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+            cd ${{ secrets.VPS_DEPLOY_PATH }}/current
+            pm2 describe frontend > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+              echo "♻️ Application existe, redémarrage..."
+              pm2 restart frontend
+            else
+              echo "🆕 Première installation, démarrage..."
+              pm2 serve . 3000 --name frontend --spa
+            fi
+            pm2 save
+          ENDSSH
           echo "✅ PM2 redémarré"
 
       # 8️⃣ Vérification finale
