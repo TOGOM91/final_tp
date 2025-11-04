@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'  # Vite recommande Node 20+
 
       # 3️⃣ Build frontend (admin-dashboard)
       - name: Install frontend dependencies
@@ -31,7 +31,7 @@ jobs:
       - name: Build frontend
         run: |
           cd admin-dashboard
-          echo "🔨 Compilation du frontend..."
+          echo "🔨 Compilation du frontend avec Vite..."
           npm run build
           echo "✅ Build terminé"
         env:
@@ -40,14 +40,12 @@ jobs:
       # 3.5️⃣ Vérifier que le build existe
       - name: Verify build directory
         run: |
-          echo "🔍 Vérification du répertoire build..."
-          if [ -d "admin-dashboard/build" ]; then
-            echo "✅ Le répertoire build existe"
-            ls -lah admin-dashboard/build
+          echo "🔍 Vérification du répertoire dist..."
+          if [ -d "admin-dashboard/dist" ]; then
+            echo "✅ Le répertoire dist existe"
+            ls -lah admin-dashboard/dist
           else
-            echo "❌ ERREUR: Le répertoire build n'existe pas !"
-            echo "Contenu de admin-dashboard:"
-            ls -lah admin-dashboard/
+            echo "❌ ERREUR: Le répertoire dist n'existe pas !"
             exit 1
           fi
 
@@ -77,20 +75,20 @@ jobs:
         run: |
           echo "🔍 Test de connexion SSH..."
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
-            deploy@213.156.132.221 "echo '✅ Connexion réussie' && whoami && pwd"
+            deploy@213.156.132.221 "echo '✅ Connexion réussie' && whoami"
 
       # 7️⃣ Déployer frontend sur VPS
       - name: Create deployment directory on VPS
         run: |
           echo "📁 Création du répertoire de déploiement..."
           ssh -i ~/.ssh/id_ed25519 deploy@213.156.132.221 \
-            "mkdir -p \$HOME/frontend/current && echo '✅ Répertoire créé: \$HOME/frontend/current'"
+            "mkdir -p ~/frontend/current && echo '✅ Répertoire créé'"
 
       - name: Sync frontend build to VPS
         run: |
           echo "📡 Synchronisation du build frontend vers VPS..."
           rsync -avz --delete -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
-            admin-dashboard/build/ \
+            admin-dashboard/dist/ \
             deploy@213.156.132.221:~/frontend/current/
           echo "✅ Synchronisation terminée"
 
