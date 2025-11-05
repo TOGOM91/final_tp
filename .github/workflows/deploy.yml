@@ -119,4 +119,4 @@ jobs:
           echo "🌐 Frontend: http://213.156.132.221:3000"
           echo "🔙 Backend: ${{ secrets.RENDER_BACKEND_URL }}"
           echo "⏰ Date: $(date)"
-          echo "================================"
+          echo "==============================="
