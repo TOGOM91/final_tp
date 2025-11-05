@@ -57,7 +57,7 @@ export default function Genres() {
       if (!token) return alert("Token manquant.");
 
       const res = await axios.post(
-        "http://localhost:3000/api/genre/new",
+        `${API_URL}/api/genre/new`,
         { name: newGenre.name },
         {
           headers: { Authorization: `Bearer ${token}` },
