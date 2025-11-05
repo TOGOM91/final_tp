@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import API_URL from "../config/api";
 
 interface Game {
   _id: string;
@@ -37,7 +36,7 @@ export default function GameListPage() {
         return;
       }
 
-      const res = await axios.get(`${API_URL}/api/gamelist/all`, {
+      const res = await axios.get(process.env.backend_url+"/api/gamelist/all", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -57,7 +56,7 @@ export default function GameListPage() {
   const fetchGames = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/api/games/all`, {
+      const res = await axios.get(process.env.backend_url+"/api/game/all", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setGames(Array.isArray(res.data.games) ? res.data.games : []);
@@ -74,7 +73,7 @@ export default function GameListPage() {
       if (!token) return alert("Token manquant.");
 
       const res = await axios.post(
-        `${API_URL}/api/gamelist/new`,
+        process.env.backend_url+"/api/gamelist/new",
         newGameList,
         {
           headers: { Authorization: `Bearer ${token}` },

@@ -13,7 +13,7 @@ const Login = () => {
     setMessage(null);
 
     try {
-      const res = await axios.post(process.env.backend_url+"/api/users/login", {
+      const res = await axios.post("https://final-tp-1.onrender.com/api/users/login", {
         email,
         password,
       });

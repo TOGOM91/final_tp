@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import API_URL from "../config/api";
 
 interface Game {
   _id: string;
@@ -35,7 +36,7 @@ export default function Games() {
         return;
       }
 
-      const res = await axios.get(process.env.backend_url+"/api/game/all", {
+      const res = await axios.get(`${API_URL}/api/game/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -59,7 +60,7 @@ export default function Games() {
         setLoading(false);
         return;
       }
-      const res = await axios.get(process.env.backend_url+"/api/genre/all", {
+      const res = await axios.get(`${API_URL}/api/genre/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Handle genres if needed
@@ -86,7 +87,7 @@ export default function Games() {
       if (!token) return alert("Token manquant.");
 
       const res = await axios.post(
-        process.env.backend_url+"/api/game/new",
+        `${API_URL}/api/game/new`,
         {
           title: newGame.title,
           description: newGame.description,

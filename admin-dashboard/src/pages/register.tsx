@@ -15,7 +15,7 @@ const Login = () => {
     setMessage(null);
 
     try {
-      const res = await axios.post(process.env.backend_url+"/api/users/register", {
+      const res = await axios.post("http://localhost:3000/api/users/register", {
         name,
         nickname,
         email,
