@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Card from "../components/Card";
+import API_URL from "../config/api";
 
 export default function Dashboard() {
   const [totalUsers, setTotalUsers] = useState<number>(0);
@@ -15,22 +16,22 @@ export default function Dashboard() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          setError("Aucun token trouvé. Veuillez vous reconnecter.");
+          setError("Aucun token trouvé. Veuillez vous reconnecterr.");
           setLoading(false);
           return;
         }
 
         const [usersRes, gamesRes, reviewsRes, genresRes] = await Promise.all([
-          axios.get(process.env.backend_url+"/api/users/", {
+          axios.get(`${API_URL}/api/users/`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get(process.env.backend_url+"/api/game/all", {
+          axios.get(`${API_URL}/api/game/all`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get(process.env.backend_url+"/api/review/all", {
+          axios.get(`${API_URL}/api/review/all`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get(process.env.backend_url+"/api/genre/all", {
+          axios.get(`${API_URL}/api/genre/all`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);

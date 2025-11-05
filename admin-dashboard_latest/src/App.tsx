@@ -10,13 +10,16 @@ import Genres from "./pages/Genre";
 import Register from "./pages/register";
 import GameList from "./pages/GameList";
 
+
+
+
 export default function App() {
   return (
 <Router>
   <Routes>
     {/* Routes publiques */}
     <Route path="/login" element={<Login />} />
-    <Route path="/register" element={<Register />} />
+    {/* <Route path="/register" element={<Register />} /> */}
 
     {/* Routes protégées */}
     {localStorage.getItem("token") ? (
