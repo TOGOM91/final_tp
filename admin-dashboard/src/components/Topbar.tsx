@@ -20,7 +20,7 @@ export default function Topbar() {
       <div className="flex items-center gap-4">
         {token ? (
           <span className="text-sm text-gray-700 max-w-xs truncate">
-            Token: {token}
+            Tokens: {token}
           </span>
         ) : (
           <span className="text-sm text-gray-500">Aucun token</span>
