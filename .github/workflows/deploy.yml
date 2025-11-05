@@ -35,7 +35,7 @@ jobs:
           npm run build
           echo "✅ Build terminé"
         env:
-          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}  # ✅ Correction ici
 
       # 3.5️⃣ Vérifier que le build existe
       - name: Verify build directory
