@@ -24,7 +24,7 @@ export default function Dashboard() {
         }
 
         const [usersRes, gamesRes, reviewsRes, genresRes] = await Promise.all([
-          axios.get(`${API_URL}/api/users/`, {
+          axios.get("https://final-tp-1.onrender.com/api/users/", {
             headers: { Authorization: `Bearer ${token}` },
           }),
           axios.get(`${API_URL}/api/game/all`, {
